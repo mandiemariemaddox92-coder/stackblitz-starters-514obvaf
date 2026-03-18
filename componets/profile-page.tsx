@@ -3,6 +3,7 @@
 import { ChangeEvent, useMemo, useRef, useState } from "react"
 import { useApp, mockCurrentUser, mockUsers, type User } from "@/lib/store"
 import { DiaryEntryCard } from "@/components/diary-entry-card"
+import {supabase} from "@/lib/supabaseClient"
 import {
   SettingsIcon,
   MusicIcon,

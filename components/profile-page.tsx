@@ -22,6 +22,20 @@ import {
   MessageCircleIcon,
 } from "@/components/icons"
 import { cn } from "@/lib/utils"
+import { calculateNumerologyNumber } from "@/lib/numerology"
+
+
+  let sum = digits
+    .split("")
+    .reduce((total, digit) => total + Number(digit), 0)
+
+  while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+    sum = String(sum)
+      .split("")
+      .reduce((total, digit) => total + Number(digit), 0)
+  }
+
+  return sum
 
 type SafeUser = User & {
   avatar?: string

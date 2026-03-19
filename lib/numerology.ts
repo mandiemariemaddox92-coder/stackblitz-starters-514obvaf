@@ -6,8 +6,9 @@ export function calculateNumerologyNumber(input: string | number): number {
     .split("")
     .reduce((total, digit) => total + Number(digit), 0)
 
-  while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
-    sum = String(sum)
+  while (sum > 9 && sum !== 11 && sum !== 22) {
+    sum = sum
+      .toString()
       .split("")
       .reduce((total, digit) => total + Number(digit), 0)
   }

@@ -24,19 +24,6 @@ import {
 import { cn } from "@/lib/utils"
 import { calculateNumerologyNumber } from "@/lib/numerology"
 
-
-  let sum = digits
-    .split("")
-    .reduce((total, digit) => total + Number(digit), 0)
-
-  while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
-    sum = String(sum)
-      .split("")
-      .reduce((total, digit) => total + Number(digit), 0)
-  }
-
-  return sum
-
 type SafeUser = User & {
   avatar?: string
   coverImage?: string
@@ -159,21 +146,6 @@ const numerologyTraitsMap: Record<string, string[]> = {
   "7": ["mystical", "private", "analytical", "deep"],
   "8": ["ambitious", "powerful", "strategic", "resilient"],
   "9": ["compassionate", "idealistic", "artistic", "old-souled"],
-}
-
-function calculateNumerologyNumber(dateString: string) {
-  const digits = dateString.replace(/\D/g, "")
-  if (!digits) return "7"
-
-  let total = digits.split("").reduce((sum, digit) => sum + Number(digit), 0)
-
-  while (total > 9 && ![11, 22, 33].includes(total)) {
-    total = String(total)
-      .split("")
-      .reduce((sum, digit) => sum + Number(digit), 0)
-  }
-
-  return String(total)
 }
 
 async function uploadFileToSupabase(file: File, folder: string) {
@@ -1056,7 +1028,7 @@ function ProfileSettingsModal({
       )
       .slice(0, 6)
 
-    const numerologyNumber = calculateNumerologyNumber(birthDate)
+    const numerologyNumber = String(calculateNumerologyNumber(birthDate))
 
     onSave({
       displayName: displayName.trim() || user.displayName,
@@ -1087,6 +1059,8 @@ function ProfileSettingsModal({
     { id: "analytics", label: "Analytics" },
     { id: "music", label: "Music" },
   ]
+
+  const previewNumerologyNumber = String(calculateNumerologyNumber(birthDate))
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
@@ -1189,13 +1163,12 @@ function ProfileSettingsModal({
                   Numerology preview
                 </p>
                 <p className="font-semibold text-foreground">
-                  Life Path {calculateNumerologyNumber(birthDate)}
+                  Life Path {previewNumerologyNumber}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {(
-                    numerologyTraitsMap[calculateNumerologyNumber(birthDate)] ||
-                    numerologyTraitsMap["7"]
-                  ).join(" • ")}
+                  {(numerologyTraitsMap[previewNumerologyNumber] || numerologyTraitsMap["7"]).join(
+                    " • "
+                  )}
                 </p>
               </div>
             </div>

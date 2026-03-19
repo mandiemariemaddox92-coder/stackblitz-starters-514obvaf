@@ -23,6 +23,26 @@ import {
 } from "@/components/icons"
 import { cn } from "@/lib/utils"
 
+type SafeUser = User & {
+  avatar?: string
+  coverImage?: string
+  galleryPhotos?: ProfilePhoto[]
+  moodSong?: { title: string; artist: string; url: string }
+  zodiacSign?: string
+  zodiacTraits?: string[]
+  personalityType?: string
+  personalityTraits?: string[]
+  birthDate?: string
+  numerologyNumber?: string
+  numerologyTraits?: string[]
+  topFriendIds?: string[]
+  isVerified?: boolean
+  bio?: string
+  interests?: string[]
+  followers?: number
+  following?: number
+}
+
 type ProfileTab = "entries" | "photos" | "creations" | "friends" | "private"
 type SettingsTab =
   | "account"
@@ -156,7 +176,6 @@ async function uploadFileToSupabase(file: File, folder: string) {
   }
 
   const { data } = supabase.storage.from("media").getPublicUrl(filePath)
-
   return data.publicUrl
 }
 
@@ -205,7 +224,12 @@ export function ProfilePage() {
     addReel,
   } = useApp()
 
-  const user = currentUser || mockCurrentUser
+  const user = (currentUser || mockCurrentUser) as SafeUser
+  const safeBio = user.bio || ""
+  const safeInterests = user.interests || []
+  const safeFollowers = user.followers || 0
+  const safeFollowing = user.following || 0
+
   const [activeTab, setActiveTab] = useState<ProfileTab>("entries")
   const [isMusicPlaying, setIsMusicPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
@@ -216,7 +240,7 @@ export function ProfilePage() {
   const [showReelUpload, setShowReelUpload] = useState(false)
   const [wallDraft, setWallDraft] = useState("")
   const [selectedCreation, setSelectedCreation] = useState<Creation | null>(null)
-  const [selectedFriend, setSelectedFriend] = useState<User | null>(null)
+  const [selectedFriend, setSelectedFriend] = useState<SafeUser | null>(null)
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
@@ -224,11 +248,11 @@ export function ProfilePage() {
   const photoInputRef = useRef<HTMLInputElement>(null)
 
   const userEntries = entries.filter((e) => e.author.id === user.id || e.author.id === "1")
-  const friends = mockUsers.filter((u) => u.id !== user.id)
+  const friends = mockUsers.filter((u) => u.id !== user.id) as SafeUser[]
   const topFriends = friends.filter((friend) => (user.topFriendIds || []).includes(friend.id))
 
   const creatorStats = {
-    views: user.followers * 8 + userEntries.length * 21,
+    views: safeFollowers * 8 + userEntries.length * 21,
     posts: userEntries.length,
     engagement: userEntries.reduce((sum, entry) => sum + entry.likes + entry.comments, 0),
     compliments: notifications.filter((n) => n.type === "compliment").length,
@@ -360,7 +384,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen pt-14 pb-20">
+    <div className="flex min-h-screen flex-col pt-14 pb-20">
       <input
         ref={avatarInputRef}
         type="file"
@@ -446,7 +470,7 @@ export function ProfilePage() {
           <p className="text-muted-foreground">@{user.username}</p>
         </div>
 
-        <p className="mb-4 leading-relaxed text-foreground">{user.bio}</p>
+        <p className="mb-4 leading-relaxed text-foreground">{safeBio}</p>
 
         <div className="mb-4 flex flex-wrap gap-2">
           {user.zodiacSign && <TraitCard title={user.zodiacSign} values={user.zodiacTraits || []} />}
@@ -464,7 +488,7 @@ export function ProfilePage() {
         <div className="relative mb-4 flex items-center gap-3 overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-secondary via-secondary to-primary/10 p-4">
           <button
             onClick={toggleMusic}
-            className="relative h-14 w-14 shrink-0 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center group"
+            className="group relative flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent"
           >
             {user.moodSong && isMusicPlaying && !isMuted ? (
               <div className="flex gap-0.5">
@@ -526,7 +550,7 @@ export function ProfilePage() {
         </div>
 
         <div className="mb-4 flex flex-wrap gap-2">
-          {user.interests.map((interest) => (
+          {safeInterests.map((interest) => (
             <span
               key={interest}
               className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm text-primary"
@@ -562,12 +586,12 @@ export function ProfilePage() {
 
         <div className="mb-5 flex gap-6">
           <button className="text-center transition-opacity hover:opacity-80">
-            <p className="text-xl font-bold text-foreground">{user.followers.toLocaleString()}</p>
+            <p className="text-xl font-bold text-foreground">{safeFollowers.toLocaleString()}</p>
             <p className="text-sm text-muted-foreground">Followers</p>
           </button>
 
           <button className="text-center transition-opacity hover:opacity-80">
-            <p className="text-xl font-bold text-foreground">{user.following.toLocaleString()}</p>
+            <p className="text-xl font-bold text-foreground">{safeFollowing.toLocaleString()}</p>
             <p className="text-sm text-muted-foreground">Following</p>
           </button>
 
@@ -670,7 +694,7 @@ export function ProfilePage() {
         </div>
       </div>
 
-      <div className="sticky top-14 z-40 overflow-x-auto border-y border-border glass">
+      <div className="glass sticky top-14 z-40 overflow-x-auto border-y border-border">
         <div className="mx-auto flex min-w-max max-w-lg">
           {[
             { id: "entries", label: "Entries", icon: BookOpenIcon },
@@ -686,7 +710,7 @@ export function ProfilePage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as ProfileTab)}
                 className={cn(
-                  "relative flex-1 whitespace-nowrap px-3 py-4 text-sm font-medium transition-all flex items-center justify-center gap-2",
+                  "relative flex flex-1 items-center justify-center gap-2 whitespace-nowrap px-3 py-4 text-sm font-medium transition-all",
                   activeTab === tab.id
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground"
@@ -923,7 +947,7 @@ function TraitCard({ title, values }: { title: string; values: string[] }) {
   )
 }
 
-function FriendMiniCard({ friend, onClick }: { friend: User; onClick: () => void }) {
+function FriendMiniCard({ friend, onClick }: { friend: SafeUser; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -935,7 +959,7 @@ function FriendMiniCard({ friend, onClick }: { friend: User; onClick: () => void
   )
 }
 
-function FriendCard({ friend, onClick }: { friend: User; onClick: () => void }) {
+function FriendCard({ friend, onClick }: { friend: SafeUser; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -980,7 +1004,7 @@ function ProfileSettingsModal({
   onSave,
   onOpenMusic,
 }: {
-  user: User
+  user: SafeUser
   creatorStats: {
     views: number
     posts: number
@@ -989,13 +1013,13 @@ function ProfileSettingsModal({
     messages: number
   }
   onClose: () => void
-  onSave: (updates: Partial<User>) => void
+  onSave: (updates: Partial<SafeUser>) => void
   onOpenMusic: () => void
 }) {
   const [activeTab, setActiveTab] = useState<SettingsTab>("account")
   const [displayName, setDisplayName] = useState(user.displayName)
-  const [bio, setBio] = useState(user.bio)
-  const [interests, setInterests] = useState(user.interests.join(", "))
+  const [bio, setBio] = useState(user.bio || "")
+  const [interests, setInterests] = useState((user.interests || []).join(", "))
   const [notificationMood, setNotificationMood] = useState(true)
   const [privateProfile, setPrivateProfile] = useState(false)
   const [professionalMode, setProfessionalMode] = useState(true)
@@ -1022,7 +1046,7 @@ function ProfileSettingsModal({
 
     onSave({
       displayName: displayName.trim() || user.displayName,
-      bio: bio.trim() || user.bio,
+      bio: bio.trim() || user.bio || "",
       interests: interests
         .split(",")
         .map((item) => item.trim())
@@ -1307,7 +1331,7 @@ function MusicSettingsModal({
   onClose,
   onSave,
 }: {
-  user: User
+  user: SafeUser
   onClose: () => void
   onSave: (song: { title: string; artist: string; url: string }) => void
 }) {
@@ -1600,7 +1624,7 @@ function FriendProfileModal({
   onMessage,
   onTip,
 }: {
-  friend: User
+  friend: SafeUser
   onClose: () => void
   onMessage: (text: string) => void
   onTip: (amount: number) => void
@@ -1632,7 +1656,7 @@ function FriendProfileModal({
           </div>
           <div>
             <p className="font-semibold text-foreground">@{friend.username}</p>
-            <p className="text-sm text-muted-foreground">{friend.bio}</p>
+            <p className="text-sm text-muted-foreground">{friend.bio || ""}</p>
           </div>
         </div>
 
@@ -1725,7 +1749,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
   )
 }
 
-function DMModal({ onClose, user }: { onClose: () => void; user: User }) {
+function DMModal({ onClose, user }: { onClose: () => void; user: SafeUser }) {
   const [message, setMessage] = useState("")
   const { sendDirectMessage } = useApp()
 
@@ -1776,7 +1800,7 @@ function DMModal({ onClose, user }: { onClose: () => void; user: User }) {
   )
 }
 
-function TipModal({ onClose, user }: { onClose: () => void; user: User }) {
+function TipModal({ onClose, user }: { onClose: () => void; user: SafeUser }) {
   const [amount, setAmount] = useState<number | null>(null)
   const [sent, setSent] = useState(false)
   const tipAmounts = [1, 5, 10, 25, 50, 100]

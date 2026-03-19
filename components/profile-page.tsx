@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useMemo, useRef, useState, type ReactNode } from "react"
 import { useApp, mockCurrentUser, mockUsers, type User } from "@/lib/store"
+import { calculateNumerologyNumber } from "@/lib/numerology"
 import { DiaryEntryCard } from "@/components/diary-entry-card"
 import { supabase } from "@/lib/supabaseClient"
 import {

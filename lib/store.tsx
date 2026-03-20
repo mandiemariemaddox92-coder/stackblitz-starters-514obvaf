@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react'
+import { calculateNumerologyNumber } from "@/lib/numerology"
 import { supabase } from '@/lib/supabase'
 
 export type DiaryFont = 'cursive' | 'punk' | 'elegant' | 'minimal' | 'calligraphy'

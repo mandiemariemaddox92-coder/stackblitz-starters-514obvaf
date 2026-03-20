@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import { calculateNumerologyNumber } from "@/lib/numerology"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabaseClient"
 
 export type DiaryFont = "cursive" | "punk" | "elegant" | "minimal" | "calligraphy"
 export type EntryPrivacy = "public" | "friends" | "private"

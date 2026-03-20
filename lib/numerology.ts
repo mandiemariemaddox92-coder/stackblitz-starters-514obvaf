@@ -1,7 +1,4 @@
-export function calculateNumerologyNumber(input: string | number): number {
-  const digits = String(input).replace(/\D/g, "")
-  if (!digits) return 0
-
+export function calculateNumerologyNumber(digits: string): number {
   let sum = digits
     .split("")
     .reduce((total, digit) => total + Number(digit), 0)

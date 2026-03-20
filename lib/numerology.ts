@@ -1,4 +1,9 @@
-export function calculateNumerologyNumber(digits: string): number {
+export function calculateNumerologyNumber(input: string): number {
+  // remove anything that is NOT a number
+  const digits = input.replace(/\D/g, "")
+
+  if (!digits) return 0
+
   let sum = digits
     .split("")
     .reduce((total, digit) => total + Number(digit), 0)

@@ -151,6 +151,8 @@ const numerologyTraitsMap: Record<string, string[]> = {
   "7": ["mystical", "private", "analytical", "deep"],
   "8": ["ambitious", "powerful", "strategic", "resilient"],
   "9": ["compassionate", "idealistic", "artistic", "old-souled"],
+  "11": ["intuitive", "inspiring", "sensitive", "visionary"],
+  "22": ["masterful", "practical", "powerful", "builder-minded"],
 }
 
 export const mockCurrentUser: User = {
@@ -499,7 +501,9 @@ function parseStoredList(value: unknown, fallback: string[] = []) {
   return fallback
 }
 
-function parseStoredPhotos(value: unknown): { id: string; url: string; caption?: string }[] | undefined {
+function parseStoredPhotos(
+  value: unknown
+): { id: string; url: string; caption?: string }[] | undefined {
   if (!Array.isArray(value)) return undefined
 
   return value
@@ -534,13 +538,14 @@ function buildUserFromProfile(
 
   const numerologyNumber =
     (typeof metadata.numerologyNumber === "string" && metadata.numerologyNumber) ||
-    (birthDate ? calculateNumerologyNumber(birthDate) : mockCurrentUser.numerologyNumber)
+    (birthDate ? String(calculateNumerologyNumber(birthDate)) : mockCurrentUser.numerologyNumber)
 
   const zodiacSign =
     (typeof metadata.zodiacSign === "string" && metadata.zodiacSign) || mockCurrentUser.zodiacSign
 
   const personalityType =
-    (typeof metadata.personalityType === "string" && metadata.personalityType) || mockCurrentUser.personalityType
+    (typeof metadata.personalityType === "string" && metadata.personalityType) ||
+    mockCurrentUser.personalityType
 
   return {
     ...mockCurrentUser,
@@ -597,10 +602,10 @@ function buildEntryFromPost(post: Record<string, unknown>, author?: User): Diary
     id: String(post.id || (typeof crypto !== "undefined" ? crypto.randomUUID() : Date.now())),
     author: author || mockCurrentUser,
     content: typeof post.content === "string" ? post.content : "",
-    font: ((post.font as DiaryFont) || "minimal"),
+    font: (post.font as DiaryFont) || "minimal",
     backgroundColor: typeof post.background_color === "string" ? post.background_color : "#120a1f",
     accentColor: typeof post.accent_color === "string" ? post.accent_color : "#a855f7",
-    privacy: ((post.privacy as EntryPrivacy) || "public"),
+    privacy: (post.privacy as EntryPrivacy) || "public",
     likes: Number(post.likes || 0),
     comments: Number(post.comments || 0),
     createdAt: new Date((post.created_at as string) || Date.now()),
@@ -798,7 +803,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [reels, isHydrated])
 
   const pushNotification = (
-    notification: Omit<Notification, "id" | "createdAt" | "read"> & Partial<Pick<Notification, "read">>
+    notification: Omit<Notification, "id" | "createdAt" | "read"> &
+      Partial<Pick<Notification, "read">>
   ) => {
     setNotifications((prev) => [
       {
@@ -840,7 +846,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       setEntries((prev) => prev.filter((item) => item.id !== optimisticEntry.id))
-      pushNotification({ type: "profile", message: "Posting failed. The database had a dramatic episode." })
+      pushNotification({
+        type: "profile",
+        message: "Posting failed. The database had a dramatic episode.",
+      })
     } else {
       const refreshed = await fetchPublicEntries().catch(() => null)
       if (refreshed) setEntries(refreshed)
@@ -925,7 +934,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     setActiveTab("messages")
     const target = mockUsers.find((user) => user.id === userId)
-    pushNotification({ type: "profile", message: `Direct message sent to @${target?.username ?? "soul"}.` })
+    pushNotification({
+      type: "profile",
+      message: `Direct message sent to @${target?.username ?? "soul"}.`,
+    })
     return conversationId
   }
 
@@ -998,9 +1010,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const joinChallenge = (challengeId: string, challengeTitle: string) => {
-    setJoinedChallengeIds((prev) =>
-      prev.includes(challengeId) ? prev : [...prev, challengeId]
-    )
+    setJoinedChallengeIds((prev) => (prev.includes(challengeId) ? prev : [...prev, challengeId]))
 
     pushNotification({
       type: "post",
@@ -1120,7 +1130,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCurrentUser(updated)
       pushNotification({ type: "profile", message: "Your profile was updated." })
     } catch {
-      pushNotification({ type: "profile", message: "Profile save failed. The cloud chose violence." })
+      pushNotification({
+        type: "profile",
+        message: "Profile save failed. The cloud chose violence.",
+      })
     }
   }
 
@@ -1130,7 +1143,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!normalized.includes("@")) {
       return {
         success: false,
-        message: "Use your email to sign in for now. Username login can wait until the app stops being dramatic.",
+        message:
+          "Use your email to sign in for now. Username login can wait until the app stops being dramatic.",
       }
     }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { ChangeEvent, useMemo, useRef, useState, type ReactNode } from "react"
+import { type ChangeEvent, useMemo, useRef, useState, type ReactNode } from "react"
 import { useApp, mockCurrentUser, mockUsers, type User } from "@/lib/store"
 import { calculateNumerologyNumber } from "@/lib/numerology"
 import { DiaryEntryCard } from "@/components/diary-entry-card"
@@ -23,7 +23,12 @@ import {
   MessageCircleIcon,
 } from "@/components/icons"
 import { cn } from "@/lib/utils"
-import { calculateNumerologyNumber } from "@/lib/numerology"
+
+type ProfilePhoto = {
+  id: string
+  url: string
+  caption?: string
+}
 
 type SafeUser = User & {
   avatar?: string
@@ -53,12 +58,6 @@ type SettingsTab =
   | "notifications"
   | "analytics"
   | "music"
-
-interface ProfilePhoto {
-  id: string
-  url: string
-  caption?: string
-}
 
 interface Creation {
   id: string
@@ -322,7 +321,7 @@ export function ProfilePage() {
 
     try {
       const publicUrl = await uploadFileToSupabase(file, "avatars")
-      updateCurrentUser({ avatar: publicUrl })
+      await updateCurrentUser({ avatar: publicUrl })
     } catch (error) {
       console.error("Avatar upload failed:", error)
     }
@@ -336,7 +335,7 @@ export function ProfilePage() {
 
     try {
       const publicUrl = await uploadFileToSupabase(file, "covers")
-      updateCurrentUser({ coverImage: publicUrl })
+      await updateCurrentUser({ coverImage: publicUrl })
     } catch (error) {
       console.error("Cover upload failed:", error)
     }
@@ -360,7 +359,7 @@ export function ProfilePage() {
         })
       )
 
-      updateCurrentUser({
+      await updateCurrentUser({
         galleryPhotos: [...next, ...(user.galleryPhotos || [])].slice(0, 12),
       })
     } catch (error) {
@@ -371,7 +370,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col pt-14 pb-20">
+    <div className="flex min-h-screen flex-col pb-20 pt-14">
       <input
         ref={avatarInputRef}
         type="file"
@@ -407,7 +406,7 @@ export function ProfilePage() {
 
         <button
           onClick={() => setShowEditProfile(true)}
-          className="absolute top-4 right-4 rounded-full bg-black/30 p-2 backdrop-blur-sm transition-colors hover:bg-black/50"
+          className="absolute right-4 top-4 rounded-full bg-black/30 p-2 backdrop-blur-sm transition-colors hover:bg-black/50"
           aria-label="Open profile settings"
         >
           <SettingsIcon className="h-5 w-5 text-white" />
@@ -422,7 +421,7 @@ export function ProfilePage() {
       </div>
 
       <div className="relative mx-auto w-full max-w-lg px-4">
-        <div className="relative -mt-16 mb-4 inline-block">
+        <div className="relative mb-4 -mt-16 inline-block">
           <div
             className={cn(
               "h-32 w-32 rounded-full bg-gradient-to-br from-primary to-accent p-1",
@@ -551,10 +550,7 @@ export function ProfilePage() {
           <div className="mb-4 rounded-2xl border border-border bg-card p-4">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-semibold text-foreground">Top Friends</h3>
-              <button
-                onClick={() => setShowEditProfile(true)}
-                className="text-sm text-primary"
-              >
+              <button onClick={() => setShowEditProfile(true)} className="text-sm text-primary">
                 Edit
               </button>
             </div>
@@ -662,10 +658,7 @@ export function ProfilePage() {
 
           <div className="max-h-60 space-y-3 overflow-auto">
             {profileWall.map((comment) => (
-              <div
-                key={comment.id}
-                className="rounded-xl border border-border bg-secondary/30 p-3"
-              >
+              <div key={comment.id} className="rounded-xl border border-border bg-secondary/30 p-3">
                 <div className="mb-1 flex items-center justify-between">
                   <p className="text-sm font-semibold text-foreground">
                     {comment.author.displayName}
@@ -883,7 +876,7 @@ export function ProfilePage() {
           user={user}
           creatorStats={creatorStats}
           onClose={() => setShowEditProfile(false)}
-          onSave={(updates) => updateCurrentUser(updates)}
+          onSave={(updates) => void updateCurrentUser(updates)}
           onOpenMusic={() => setShowMusicSettings(true)}
         />
       )}
@@ -892,7 +885,7 @@ export function ProfilePage() {
           user={user}
           onClose={() => setShowMusicSettings(false)}
           onSave={(moodSong) => {
-            updateCurrentUser({ moodSong })
+            void updateCurrentUser({ moodSong })
             setShowMusicSettings(false)
           }}
         />

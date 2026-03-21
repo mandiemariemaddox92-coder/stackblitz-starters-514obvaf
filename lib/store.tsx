@@ -1,10 +1,7 @@
-// Force build update for Netlify
-
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { calculateNumerologyNumber } from "@/lib/numerology"
 
 export type DiaryFont = "cursive" | "punk" | "elegant" | "minimal" | "calligraphy"
 export type EntryPrivacy = "public" | "friends" | "private"
@@ -26,8 +23,6 @@ export interface User {
   personalityType?: string
   personalityTraits?: string[]
   birthDate?: string
-  numerologyNumber?: string
-  numerologyTraits?: string[]
   topFriendIds?: string[]
   coverImage?: string
   galleryPhotos?: { id: string; url: string; caption?: string }[]
@@ -93,20 +88,6 @@ const zodiacTraitsMap: Record<string, string[]> = {
   Pisces: ["empathetic", "dreamy", "creative", "private"],
 }
 
-const numerologyTraitsMap: Record<string, string[]> = {
-  "1": ["independent", "driven", "bold", "self-starting"],
-  "2": ["sensitive", "diplomatic", "intuitive", "loyal"],
-  "3": ["creative", "expressive", "playful", "magnetic"],
-  "4": ["grounded", "steady", "disciplined", "reliable"],
-  "5": ["adventurous", "curious", "restless", "free-spirited"],
-  "6": ["nurturing", "protective", "romantic", "responsible"],
-  "7": ["mystical", "private", "analytical", "deep"],
-  "8": ["ambitious", "powerful", "strategic", "resilient"],
-  "9": ["compassionate", "idealistic", "artistic", "old-souled"],
-  "11": ["intuitive", "inspiring", "sensitive", "visionary"],
-  "22": ["masterful", "practical", "powerful", "builder-minded"],
-}
-
 export const mockCurrentUser: User = {
   id: "1",
   username: "nightowl",
@@ -121,15 +102,12 @@ export const mockCurrentUser: User = {
   zodiacSign: "Scorpio",
   zodiacTraits: zodiacTraitsMap.Scorpio,
   birthDate: "1991-11-12",
-  numerologyNumber: "7",
-  numerologyTraits: numerologyTraitsMap["7"],
   coverImage: "/placeholder.jpg",
   galleryPhotos: [],
 }
 
 export const mockUsers: User[] = [mockCurrentUser];
 
-// --- RESTORED DATA BELOW ---
 export const mockDiaryEntries: DiaryEntry[] = [
   {
     id: "e1",
@@ -189,14 +167,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateCurrentUser = async (updates: Partial<User>) => {
     setCurrentUser((prev) => {
       if (!prev) return null;
-      const next = { ...prev, ...updates };
-      
-      if (updates.birthDate) {
-        const num = calculateNumerologyNumber(updates.birthDate);
-        next.numerologyNumber = String(num);
-        next.numerologyTraits = numerologyTraitsMap[String(num)] || [];
-      }
-      return next;
+      return { ...prev, ...updates };
     })
   }
 

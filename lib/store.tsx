@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import { supabase } from "@/lib/supabaseClient"
-// This matches the file we fixed earlier
 import { calculateNumerologyNumber } from "@/lib/numerology"
 
 export type DiaryFont = "cursive" | "punk" | "elegant" | "minimal" | "calligraphy"
@@ -128,6 +127,34 @@ export const mockCurrentUser: User = {
 
 export const mockUsers: User[] = [mockCurrentUser];
 
+// --- RESTORED DATA BELOW ---
+export const mockDiaryEntries: DiaryEntry[] = [
+  {
+    id: "e1",
+    author: mockCurrentUser,
+    content: "The stars feel closer tonight. 🌙 Anyone else feeling that heavy melancholic nostalgia?",
+    font: "cursive",
+    backgroundColor: "bg-slate-900",
+    accentColor: "text-purple-400",
+    privacy: "public",
+    likes: 124,
+    comments: 18,
+    createdAt: new Date(),
+  },
+  {
+    id: "e2",
+    author: mockCurrentUser,
+    content: "Neon lights and cold coffee. The city never sleeps, and neither do my thoughts.",
+    font: "punk",
+    backgroundColor: "bg-zinc-950",
+    accentColor: "text-pink-500",
+    privacy: "public",
+    likes: 89,
+    comments: 5,
+    createdAt: new Date(),
+  }
+];
+
 interface AppContextType {
   currentUser: User | null
   activeTab: string
@@ -151,7 +178,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined)
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(mockCurrentUser)
   const [activeTab, setActiveTab] = useState("home")
-  const [entries, setEntries] = useState<DiaryEntry[]>([])
+  const [entries, setEntries] = useState<DiaryEntry[]>(mockDiaryEntries)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [profileComments, setProfileComments] = useState<ProfileComment[]>([])
@@ -162,7 +189,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!prev) return null;
       const next = { ...prev, ...updates };
       
-      // If birthDate changed, update Numerology automatically
       if (updates.birthDate) {
         const num = calculateNumerologyNumber(updates.birthDate);
         next.numerologyNumber = String(num);

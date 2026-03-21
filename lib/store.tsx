@@ -2,25 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import { supabase } from "@/lib/supabaseClient"
-
-function calculateNumerologyNumber(input: string): number {
-  const digits = input.replace(/\D/g, "")
-
-  if (!digits) return 0
-
-  let sum = digits
-    .split("")
-    .reduce((total, digit) => total + Number(digit), 0)
-
-  while (sum > 9 && sum !== 11 && sum !== 22) {
-    sum = sum
-      .toString()
-      .split("")
-      .reduce((total, digit) => total + Number(digit), 0)
-  }
-
-  return sum
-}
+import { calculateNumerologyNumber } from "@/lib/numerology"
 
 export type DiaryFont = "cursive" | "punk" | "elegant" | "minimal" | "calligraphy"
 export type EntryPrivacy = "public" | "friends" | "private"

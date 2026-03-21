@@ -151,18 +151,36 @@ interface AppContextType {
   reels: ReelItem[]
   addReel: (payload: any) => void
   addPetSpotlight: (payload: any) => void
+  login: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>
+  signup: (data: any) => Promise<{ success: boolean; message?: string }>
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(mockCurrentUser)
+  const [currentUser, setCurrentUser] = useState<User | null>(null) // Start as null to force login
   const [activeTab, setActiveTab] = useState("home")
   const [entries, setEntries] = useState<DiaryEntry[]>(mockDiaryEntries)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [profileComments, setProfileComments] = useState<ProfileComment[]>([])
   const [reels, setReels] = useState<ReelItem[]>([])
+
+  const login = async (email: string, pass: string) => {
+    // This allows the AuthPage to "Sign In" successfully
+    setCurrentUser(mockCurrentUser)
+    return { success: true }
+  }
+
+  const signup = async (data: any) => {
+    // This allows the AuthPage to "Create Account" successfully
+    setCurrentUser({
+      ...mockCurrentUser,
+      username: data.username || "new_soul",
+      displayName: data.displayName || "New Creator",
+    })
+    return { success: true }
+  }
 
   const updateCurrentUser = async (updates: Partial<User>) => {
     setCurrentUser((prev) => {
@@ -222,6 +240,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         reels,
         addReel,
         addPetSpotlight,
+        login,
+        signup,
       }}
     >
       {children}

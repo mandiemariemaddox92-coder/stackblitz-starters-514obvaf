@@ -2,8 +2,6 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import { supabase } from "@/lib/supabaseClient"
-// This matches the file we fixed earlier
-import { calculateNumerologyNumber } from "@/lib/numerology"
 
 export type DiaryFont = "cursive" | "punk" | "elegant" | "minimal" | "calligraphy"
 export type EntryPrivacy = "public" | "friends" | "private"
@@ -22,12 +20,7 @@ export interface User {
   isVerified?: boolean
   zodiacSign?: string
   zodiacTraits?: string[]
-  personalityType?: string
-  personalityTraits?: string[]
   birthDate?: string
-  numerologyNumber?: string
-  numerologyTraits?: string[]
-  topFriendIds?: string[]
   coverImage?: string
   galleryPhotos?: { id: string; url: string; caption?: string }[]
 }
@@ -45,65 +38,20 @@ export interface DiaryEntry {
   createdAt: Date
 }
 
-export interface Notification {
-  id: string
-  type: "like" | "comment" | "follow" | "confession" | "compliment" | "post" | "profile"
-  message: string
-  read: boolean
-  createdAt: Date
-}
-
-export interface Conversation {
-  id: string
-  userId: string
-  preview: string
-  time: string
-  unread: number
-  messages: any[]
-}
-
-export interface ProfileComment {
-  id: string
-  author: User
-  text: string
-  createdAt: Date
-}
-
-export interface ReelItem {
-  id: string
-  title: string
-  caption: string
-  videoUrl: string
-  createdAt: Date
-}
-
+// ... (Constants for Zodiac)
 const zodiacTraitsMap: Record<string, string[]> = {
-  Aries: ["bold", "protective", "competitive", "direct"],
-  Taurus: ["loyal", "grounded", "sensual", "stubborn"],
-  Gemini: ["curious", "witty", "restless", "social"],
-  Cancer: ["nurturing", "private", "protective", "emotional"],
-  Leo: ["radiant", "loyal", "creative", "dramatic"],
-  Virgo: ["thoughtful", "precise", "reserved", "helpful"],
-  Libra: ["charming", "balanced", "romantic", "indecisive"],
-  Scorpio: ["loyal", "intense", "private", "magnetic"],
-  Sagittarius: ["free", "blunt", "adventurous", "hopeful"],
-  Capricorn: ["steady", "ambitious", "private", "disciplined"],
-  Aquarius: ["original", "aloof", "idealistic", "clever"],
-  Pisces: ["empathetic", "dreamy", "creative", "private"],
-}
-
-const numerologyTraitsMap: Record<string, string[]> = {
-  "1": ["independent", "driven", "bold", "self-starting"],
-  "2": ["sensitive", "diplomatic", "intuitive", "loyal"],
-  "3": ["creative", "expressive", "playful", "magnetic"],
-  "4": ["grounded", "steady", "disciplined", "reliable"],
-  "5": ["adventurous", "curious", "restless", "free-spirited"],
-  "6": ["nurturing", "protective", "romantic", "responsible"],
-  "7": ["mystical", "private", "analytical", "deep"],
-  "8": ["ambitious", "powerful", "strategic", "resilient"],
-  "9": ["compassionate", "idealistic", "artistic", "old-souled"],
-  "11": ["intuitive", "inspiring", "sensitive", "visionary"],
-  "22": ["masterful", "practical", "powerful", "builder-minded"],
+  Aries: ["bold", "protective", "competitive"],
+  Taurus: ["loyal", "grounded", "stubborn"],
+  Gemini: ["curious", "witty", "social"],
+  Cancer: ["nurturing", "emotional", "protective"],
+  Leo: ["radiant", "creative", "dramatic"],
+  Virgo: ["thoughtful", "precise", "helpful"],
+  Libra: ["charming", "balanced", "romantic"],
+  Scorpio: ["loyal", "intense", "magnetic"],
+  Sagittarius: ["free", "blunt", "hopeful"],
+  Capricorn: ["steady", "ambitious", "disciplined"],
+  Aquarius: ["original", "idealistic", "clever"],
+  Pisces: ["empathetic", "dreamy", "creative"],
 }
 
 export const mockCurrentUser: User = {
@@ -111,75 +59,66 @@ export const mockCurrentUser: User = {
   username: "nightowl",
   displayName: "Luna Starweaver",
   avatar: "/placeholder-user.jpg",
-  bio: "Writing my soul into the void. Collector of midnight thoughts and neon dreams.",
-  moodSong: { title: "Midnight City", artist: "M83", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+  bio: "Writing my soul into the void.",
   aestheticTheme: "midnight",
-  interests: ["poetry", "photography", "music"],
+  interests: ["poetry", "photography"],
   followers: 2847,
   following: 412,
   zodiacSign: "Scorpio",
   zodiacTraits: zodiacTraitsMap.Scorpio,
-  birthDate: "1991-11-12",
-  numerologyNumber: "7",
-  numerologyTraits: numerologyTraitsMap["7"],
-  coverImage: "/placeholder.jpg",
-  galleryPhotos: [],
 }
-
-export const mockUsers: User[] = [mockCurrentUser];
 
 interface AppContextType {
   currentUser: User | null
   activeTab: string
   setActiveTab: (tab: string) => void
-  notifications: Notification[]
+  notifications: any[]
   entries: DiaryEntry[]
   addEntry: (entry: any) => Promise<void>
-  conversations: Conversation[]
+  conversations: any[]
   updateCurrentUser: (updates: Partial<User>) => Promise<void>
-  profileComments: ProfileComment[]
+  profileComments: any[]
   addProfileComment: (text: string) => void
   sendDirectMessage: (userId: string, text: string) => void
   sendTip: (userId: string, amount: number) => void
-  reels: ReelItem[]
+  reels: any[]
   addReel: (payload: any) => void
   addPetSpotlight: (payload: any) => void
+  login: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>
+  signup: (data: any) => Promise<{ success: boolean; message?: string }>
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(mockCurrentUser)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [activeTab, setActiveTab] = useState("home")
   const [entries, setEntries] = useState<DiaryEntry[]>([])
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [conversations, setConversations] = useState<Conversation[]>([])
-  const [profileComments, setProfileComments] = useState<ProfileComment[]>([])
-  const [reels, setReels] = useState<ReelItem[]>([])
+  const [notifications] = useState([])
+  const [conversations] = useState([])
+  const [profileComments, setProfileComments] = useState<any[]>([])
+  const [reels, setReels] = useState<any[]>([])
+
+  const login = async (email: string, pass: string) => {
+    setCurrentUser(mockCurrentUser)
+    return { success: true }
+  }
+
+  const signup = async (data: any) => {
+    setCurrentUser({
+      ...mockCurrentUser,
+      username: data.username || "new_user",
+      displayName: data.displayName || "New Creator",
+    })
+    return { success: true }
+  }
 
   const updateCurrentUser = async (updates: Partial<User>) => {
-    setCurrentUser((prev) => {
-      if (!prev) return null;
-      const next = { ...prev, ...updates };
-      
-      // If birthDate changed, update Numerology automatically
-      if (updates.birthDate) {
-        const num = calculateNumerologyNumber(updates.birthDate);
-        next.numerologyNumber = String(num);
-        next.numerologyTraits = numerologyTraitsMap[String(num)] || [];
-      }
-      return next;
-    })
+    setCurrentUser((prev) => (prev ? { ...prev, ...updates } : null))
   }
 
   const addEntry = async (entry: any) => {
-    if (!currentUser) return;
-    const newEntry = { 
-      ...entry, 
-      id: crypto.randomUUID(), 
-      author: currentUser, 
-      createdAt: new Date() 
-    }
+    const newEntry = { ...entry, id: crypto.randomUUID(), author: currentUser, createdAt: new Date() }
     setEntries([newEntry, ...entries])
   }
 
@@ -189,40 +128,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setProfileComments([newComment, ...profileComments])
   }
 
-  const sendDirectMessage = (userId: string, text: string) => {
-    console.log(`DM to ${userId}: ${text}`)
-  }
-
-  const sendTip = (userId: string, amount: number) => {
-    console.log(`Tip to ${userId}: $${amount}`)
-  }
-
-  const addReel = (payload: any) => {
-    setReels([{ ...payload, id: crypto.randomUUID(), createdAt: new Date() }, ...reels])
-  }
-
-  const addPetSpotlight = (payload: any) => {
-    console.log("Pet Added:", payload)
-  }
+  const sendDirectMessage = (u: string, t: string) => console.log(u, t)
+  const sendTip = (u: string, a: number) => console.log(u, a)
+  const addReel = (p: any) => setReels([{ ...p, id: crypto.randomUUID(), createdAt: new Date() }, ...reels])
+  const addPetSpotlight = (p: any) => console.log(p)
 
   return (
     <AppContext.Provider
       value={{
-        currentUser,
-        activeTab,
-        setActiveTab,
-        notifications,
-        entries,
-        addEntry,
-        conversations,
-        updateCurrentUser,
-        profileComments,
-        addProfileComment,
-        sendDirectMessage,
-        sendTip,
-        reels,
-        addReel,
-        addPetSpotlight,
+        currentUser, activeTab, setActiveTab, notifications, entries, addEntry,
+        conversations, updateCurrentUser, profileComments, addProfileComment,
+        sendDirectMessage, sendTip, reels, addReel, addPetSpotlight, login, signup
       }}
     >
       {children}

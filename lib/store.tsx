@@ -1,8 +1,26 @@
 "use client"
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
-import { calculateNumerologyNumber } from "@/lib/numerology"
 import { supabase } from "@/lib/supabaseClient"
+
+function calculateNumerologyNumber(input: string): number {
+  const digits = input.replace(/\D/g, "")
+
+  if (!digits) return 0
+
+  let sum = digits
+    .split("")
+    .reduce((total, digit) => total + Number(digit), 0)
+
+  while (sum > 9 && sum !== 11 && sum !== 22) {
+    sum = sum
+      .toString()
+      .split("")
+      .reduce((total, digit) => total + Number(digit), 0)
+  }
+
+  return sum
+}
 
 export type DiaryFont = "cursive" | "punk" | "elegant" | "minimal" | "calligraphy"
 export type EntryPrivacy = "public" | "friends" | "private"
@@ -534,10 +552,10 @@ function buildUserFromProfile(
     username
 
   const birthDate =
-    (typeof metadata.birthDate === "string" && metadata.birthDate) || mockCurrentUser.birthDate
+    (typeof metadata.birthDate === "string" && metadata.birthDate.trim()) || mockCurrentUser.birthDate
 
   const numerologyNumber =
-    (typeof metadata.numerologyNumber === "string" && metadata.numerologyNumber) ||
+    (typeof metadata.numerologyNumber === "string" && metadata.numerologyNumber.trim()) ||
     (birthDate ? String(calculateNumerologyNumber(birthDate)) : mockCurrentUser.numerologyNumber)
 
   const zodiacSign =
@@ -1078,6 +1096,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
         )
       }
 
+      const nextBirthDate =
+        typeof updates.birthDate === "string" && updates.birthDate.trim()
+          ? updates.birthDate
+          : currentUser.birthDate
+
+      const nextNumerologyNumber =
+        typeof updates.numerologyNumber === "string" && updates.numerologyNumber.trim()
+          ? updates.numerologyNumber
+          : nextBirthDate
+          ? String(calculateNumerologyNumber(nextBirthDate))
+          : currentUser.numerologyNumber
+
+      const nextNumerologyTraits =
+        updates.numerologyTraits ??
+        (nextNumerologyNumber
+          ? numerologyTraitsMap[nextNumerologyNumber] || currentUser.numerologyTraits
+          : currentUser.numerologyTraits)
+
       const profilePayload = {
         id: currentUser.id,
         username: updates.username ?? currentUser.username,
@@ -1104,9 +1140,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         zodiacTraits: updates.zodiacTraits ?? currentUser.zodiacTraits,
         personalityType: updates.personalityType ?? currentUser.personalityType,
         personalityTraits: updates.personalityTraits ?? currentUser.personalityTraits,
-        birthDate: updates.birthDate ?? currentUser.birthDate,
-        numerologyNumber: updates.numerologyNumber ?? currentUser.numerologyNumber,
-        numerologyTraits: updates.numerologyTraits ?? currentUser.numerologyTraits,
+        birthDate: nextBirthDate,
+        numerologyNumber: nextNumerologyNumber,
+        numerologyTraits: nextNumerologyTraits,
         topFriendIds: updates.topFriendIds ?? currentUser.topFriendIds,
         galleryPhotos: galleryPhotos ?? currentUser.galleryPhotos,
       }
@@ -1122,6 +1158,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const updated: User = {
         ...currentUser,
         ...updates,
+        birthDate: nextBirthDate,
+        numerologyNumber: nextNumerologyNumber,
+        numerologyTraits: nextNumerologyTraits,
         avatar: avatarUrl ?? currentUser.avatar,
         coverImage: coverUrl ?? currentUser.coverImage,
         galleryPhotos: galleryPhotos ?? currentUser.galleryPhotos,

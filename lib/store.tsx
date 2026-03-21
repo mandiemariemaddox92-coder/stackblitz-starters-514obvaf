@@ -660,9 +660,7 @@ async function fetchPublicEntries(): Promise<DiaryEntry[]> {
 
   if (authorIds.length) {
     const { data: profiles } = await supabase.from("profiles").select("*").in("id", authorIds)
-    authorMap = new Map(
-      (profiles || []).map((profile) => [profile.id, buildUserFromProfile(profile)])
-    )
+    authorMap = new Map((profiles || []).map((profile) => [profile.id, buildUserFromProfile(profile)]))
   }
 
   return posts.map((post) => buildEntryFromPost(post, authorMap.get(post.author_id)))
@@ -1105,8 +1103,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         typeof updates.numerologyNumber === "string" && updates.numerologyNumber.trim()
           ? updates.numerologyNumber
           : nextBirthDate
-          ? String(calculateNumerologyNumber(nextBirthDate))
-          : currentUser.numerologyNumber
+            ? String(calculateNumerologyNumber(nextBirthDate))
+            : currentUser.numerologyNumber
 
       const nextNumerologyTraits =
         updates.numerologyTraits ??

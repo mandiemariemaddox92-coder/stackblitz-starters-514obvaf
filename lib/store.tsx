@@ -260,8 +260,22 @@ const seedProfileComments: ProfileComment[] = [
   { id: "pc1", author: mockUsers[1], text: "Your page feels like Myspace learned poetry and stopped being obnoxious.", createdAt: new Date(Date.now() - 1000 * 60 * 70) },
 ]
 
+interface StoredState {
+  currentUser: User | null
+  users: User[]
+  isAuthenticated: boolean
+  notifications: NotificationItem[]
+  entries: DiaryEntry[]
+  conversations: Conversation[]
+  profileComments: ProfileComment[]
+  reels: ReelItem[]
+  petSpotlights: PetSpotlight[]
+  joinedChallengeIds: string[]
+}
+
 interface AppContextType {
   currentUser: User | null
+  users: User[]
   isAuthenticated: boolean
   activeTab: string
   setActiveTab: (tab: string) => void
@@ -297,13 +311,34 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
-const STORAGE_KEY = "soulgem_state_v2"
+const STORAGE_KEY = "soulgem_state_v3"
 
 function toDate<T extends { createdAt: Date | string }>(items: T[]): T[] {
   return items.map((item) => ({ ...item, createdAt: new Date(item.createdAt) }))
 }
 
+function normalizeUser(user: User): User {
+  return {
+    ...user,
+    topFriendIds: user.topFriendIds ?? [],
+    galleryPhotos: user.galleryPhotos ?? [],
+  }
+}
+
+function replaceUserReferences<T extends { author?: User; owner?: User }>(items: T[], updatedUser: User): T[] {
+  return items.map((item) => {
+    if ("author" in item && item.author?.id === updatedUser.id) {
+      return { ...item, author: updatedUser }
+    }
+    if ("owner" in item && item.owner?.id === updatedUser.id) {
+      return { ...item, owner: updatedUser }
+    }
+    return item
+  })
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
+  const [users, setUsers] = useState<User[]>(mockUsers)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [activeTab, setActiveTab] = useState("home")
@@ -322,40 +357,60 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY)
       if (!raw) return
-      const parsed = JSON.parse(raw)
-      setCurrentUser(parsed.currentUser ?? null)
+
+      const parsed: Partial<StoredState> = JSON.parse(raw)
+
+      setUsers((parsed.users ?? mockUsers).map(normalizeUser))
+      setCurrentUser(parsed.currentUser ? normalizeUser(parsed.currentUser) : null)
       setIsAuthenticated(Boolean(parsed.isAuthenticated))
       setNotifications(toDate(parsed.notifications ?? seedNotifications))
-      setEntries(toDate(parsed.entries ?? mockDiaryEntries))
-      setConversations((parsed.conversations ?? seedConversations).map((conversation: Conversation) => ({
-        ...conversation,
-        messages: toDate(conversation.messages ?? []),
-      })))
-      setProfileComments(toDate(parsed.profileComments ?? seedProfileComments))
+      setEntries(
+        toDate(parsed.entries ?? mockDiaryEntries).map((entry) => ({
+          ...entry,
+          author: normalizeUser(entry.author),
+        }))
+      )
+      setConversations(
+        (parsed.conversations ?? seedConversations).map((conversation) => ({
+          ...conversation,
+          messages: toDate(conversation.messages ?? []),
+        }))
+      )
+      setProfileComments(
+        toDate(parsed.profileComments ?? seedProfileComments).map((comment) => ({
+          ...comment,
+          author: normalizeUser(comment.author),
+        }))
+      )
       setReels(toDate(parsed.reels ?? []))
-      setPetSpotlights(parsed.petSpotlights ?? [])
+      setPetSpotlights(
+        (parsed.petSpotlights ?? []).map((spotlight) => ({
+          ...spotlight,
+          owner: normalizeUser(spotlight.owner),
+        }))
+      )
       setJoinedChallengeIds(parsed.joinedChallengeIds ?? [])
     } catch {
-      // broken storage happens because computers enjoy spite
+      // local storage corruption: a timeless collaboration between browsers and fate
     }
   }, [])
 
   useEffect(() => {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        currentUser,
-        isAuthenticated,
-        notifications,
-        entries,
-        conversations,
-        profileComments,
-        reels,
-        petSpotlights,
-        joinedChallengeIds,
-      }),
-    )
-  }, [currentUser, isAuthenticated, notifications, entries, conversations, profileComments, reels, petSpotlights, joinedChallengeIds])
+    const stateToStore: StoredState = {
+      users,
+      currentUser,
+      isAuthenticated,
+      notifications,
+      entries,
+      conversations,
+      profileComments,
+      reels,
+      petSpotlights,
+      joinedChallengeIds,
+    }
+
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToStore))
+  }, [users, currentUser, isAuthenticated, notifications, entries, conversations, profileComments, reels, petSpotlights, joinedChallengeIds])
 
   const unreadCount = useMemo(() => notifications.filter((item) => !item.read).length, [notifications])
 
@@ -364,8 +419,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const login = async (email: string, pass: string) => {
-    if (!email.trim() || !pass.trim()) return { success: false, message: "Enter your email and password." }
+    if (!email.trim() || !pass.trim()) {
+      return { success: false, message: "Enter your email and password." }
+    }
+
+    const savedUsersRaw = window.localStorage.getItem(STORAGE_KEY)
+    if (savedUsersRaw) {
+      try {
+        const parsed: Partial<StoredState> = JSON.parse(savedUsersRaw)
+        const availableUsers = (parsed.users ?? mockUsers).map(normalizeUser)
+        setUsers(availableUsers)
+
+        const matchedUser =
+          availableUsers.find((user) => user.username.toLowerCase() === email.trim().replace(/^@/, "").toLowerCase()) ??
+          availableUsers[0] ??
+          mockCurrentUser
+
+        setCurrentUser(matchedUser)
+        setIsAuthenticated(true)
+        return { success: true }
+      } catch {
+        // ignore and use fallback below
+      }
+    }
+
     setCurrentUser(mockCurrentUser)
+    setUsers(mockUsers)
     setIsAuthenticated(true)
     return { success: true }
   }
@@ -375,7 +454,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return { success: false, message: "Finish the sign up form first." }
     }
 
-    const newUser: User = {
+    const newUser: User = normalizeUser({
       ...mockCurrentUser,
       id: crypto.randomUUID(),
       username: data.username.trim().replace(/^@/, ""),
@@ -383,7 +462,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       bio: "New here. Trying to be interesting without becoming unbearable.",
       followers: 0,
       following: 0,
-    }
+      topFriendIds: [],
+      galleryPhotos: [],
+    })
+
+    setUsers((prev) => {
+      const withoutDuplicate = prev.filter((user) => user.id !== newUser.id)
+      return [newUser, ...withoutDuplicate]
+    })
     setCurrentUser(newUser)
     setIsAuthenticated(true)
     return { success: true }
@@ -396,7 +482,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const updateCurrentUser = async (updates: Partial<User>) => {
-    setCurrentUser((prev) => (prev ? { ...prev, ...updates } : prev))
+    setCurrentUser((prevUser) => {
+      if (!prevUser) return prevUser
+
+      const updatedUser = normalizeUser({ ...prevUser, ...updates })
+
+      setUsers((prevUsers) =>
+        prevUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user))
+      )
+
+      setEntries((prevEntries) => replaceUserReferences(prevEntries, updatedUser))
+      setProfileComments((prevComments) => replaceUserReferences(prevComments, updatedUser))
+      setPetSpotlights((prevSpotlights) => replaceUserReferences(prevSpotlights, updatedUser))
+
+      return updatedUser
+    })
   }
 
   const addEntry = async (entry: { content: string; font: DiaryFont; privacy: EntryPrivacy; accentColor: string; backgroundColor: string; backgroundTexture?: DiaryEntry["backgroundTexture"] }) => {
@@ -436,12 +536,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           preview: text,
           messages: [...conversation.messages, message],
         }
-      }),
+      })
     )
   }
 
   const markConversationRead = (conversationId: string) => {
-    setConversations((prev) => prev.map((conversation) => (conversation.id === conversationId ? { ...conversation, unread: 0 } : conversation)))
+    setConversations((prev) =>
+      prev.map((conversation) => (conversation.id === conversationId ? { ...conversation, unread: 0 } : conversation))
+    )
   }
 
   const sendDirectMessage = (userId: string, text: string) => {
@@ -463,7 +565,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const sendTip = (userId: string, amount: number) => {
-    const user = mockUsers.find((item) => item.id === userId)
+    const user = users.find((item) => item.id === userId)
     pushNotification("gift", `You sent $${amount} to ${user?.displayName || "a creator"}. Tiny digital generosity achieved.`)
   }
 
@@ -494,6 +596,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider
       value={{
         currentUser,
+        users,
         isAuthenticated,
         activeTab,
         setActiveTab,

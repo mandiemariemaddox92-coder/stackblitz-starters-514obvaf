@@ -9,10 +9,7 @@ export function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border">
       <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
-        <button 
-          onClick={() => setActiveTab('home')}
-          className="flex items-center gap-2 group"
-        >
+        <button onClick={() => setActiveTab("home")} className="flex items-center gap-2 group">
           <div className="relative">
             <GemIcon className="w-8 h-8 text-primary animate-glow-pulse" />
             <div className="absolute inset-0 blur-lg bg-primary/30 rounded-full" />
@@ -23,32 +20,20 @@ export function Header() {
         </button>
 
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setActiveTab('discover')}
-            className="relative p-2 rounded-full hover:bg-secondary transition-colors"
-            aria-label="Search"
-          >
+          <button onClick={() => setActiveTab("discover")} className="relative p-2 rounded-full hover:bg-secondary transition-colors" aria-label="Search">
             <SearchIcon className="w-5 h-5 text-foreground" />
           </button>
-          
-          <button 
-            onClick={() => setActiveTab('notifications')}
-            className="relative p-2 rounded-full hover:bg-secondary transition-colors"
-            aria-label="Notifications"
-          >
+
+          <button onClick={() => setActiveTab("notifications")} className="relative p-2 rounded-full hover:bg-secondary transition-colors" aria-label="Notifications">
             <BellIcon className="w-5 h-5 text-foreground" />
             {unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-primary-foreground bg-accent rounded-full">
-                {unreadCount > 9 ? '9+' : unreadCount}
+                {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
           </button>
 
-          <button 
-            onClick={logout}
-            className="px-3 py-1.5 rounded-full text-xs font-medium bg-secondary hover:bg-secondary/80 transition-colors text-foreground"
-            aria-label="Log out"
-          >
+          <button onClick={logout} className="px-3 py-1.5 rounded-full text-xs font-medium bg-secondary hover:bg-secondary/80 transition-colors text-foreground" aria-label="Log out">
             Log out
           </button>
         </div>

@@ -7,7 +7,6 @@ import {
   Great_Vibes,
   JetBrains_Mono,
 } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
 import { AppProvider } from "@/lib/store"
 import "./globals.css"
 
@@ -83,10 +82,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${playfair.variable} ${dancingScript.variable} ${permanentMarker.variable} ${greatVibes.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
-        <AppProvider>
-          {children}
-        </AppProvider>
-        <Analytics />
+        <AppProvider>{children}</AppProvider>
       </body>
     </html>
   )
